@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multilingual DocChat</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Font Awesome for Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Google Fonts -->
+<link href="https://www.google.com/search?q=https://fonts.googleapis.com/css2%3Ffamily%3DPlus%2BJakarta%2BSans:wght%40400%3B600%3B700%26display%3Dswap" rel="stylesheet">
+
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    sans: ['"Plus Jakarta Sans"', 'sans-serif']
+                },
+                colors: {
+                    primary: {
+                        50: '#eef2ff',
+                        500: '#6366f1',
+                        600: '#4f46e5'
+                    }
+                }
+            }
+        }
+    }
+</script>
+
+<style>
+    .glass {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+    
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .message-anim {
+        animation: slideIn 0.3s ease-out forwards;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+</style>
+
+
+</head>
+<body class="bg-gray-50 h-screen flex overflow-hidden">
+
+<!-- Sidebar -->
+<aside id="sidebar" class="bg-white w-80 border-r border-gray-100 flex flex-col fixed inset-y-0 left-0 z-50 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 shadow-xl lg:shadow-none">
+    <div class="h-20 flex items-center px-8 border-b border-gray-50">
+        <div class="flex items-center gap-3 text-primary-600">
+            <div class="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
+                <i class="fa-solid fa-shapes text-xl"></i>
+            </div>
+            <span class="font-bold text-xl tracking-tight text-gray-900">DocChat</span>
+        </div>
+    </div>
+
+    <div class="flex-1 p-6 space-y-8 overflow-y-auto">
+        <!-- Language Selection -->
+        <div class="space-y-4">
+            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary-500 mr-2"></span> Target Language
+            </label>
+            <select id="languageSelect" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-primary-100 transition-all cursor-pointer" onchange="updateLang()">
+                <option value="English">English</option>
+                <option value="Hindi">Hindi (हिंदी)</option>
+                <option value="Bengali">Bengali (বাংলা)</option>
+                <option value="Telugu">Telugu (తెలుగు)</option>
+                <option value="Marathi">Marathi (मराठी)</option>
+                <option value="Tamil">Tamil (தமிழ்)</option>
+                <option value="Gujarati">Gujarati (ગુજરાતી)</option>
+                <option value="Malayalam">Malayalam (മലയാളം)</option>
+                <option value="Kannada">Kannada (ಕನ್ನಡ)</option>
+                <option value="Punjabi">Punjabi (ਪੰਜਾਬੀ)</option>
+                <option value="Assamese">Assamese (অসমীয়া)</option>
+                <option value="Odia">Odia (ଓଡ଼ିଆ)</option>
+                <option value="Sanskrit">Sanskrit (संस्कृतम्)</option>
+                <option value="Urdu">Urdu (اردو)</option>
+            </select>
+        </div>
+
+        <!-- Source Section -->
+        <div class="space-y-4">
+            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary-500 mr-2"></span> Sources
+            </label>
+            
+            <!-- URL Input -->
+            <div class="flex gap-2">
+                <input type="text" id="urlInput" placeholder="Enter URL..." class="flex-1 p-2 text-xs bg-gray-50 border border-gray-100 rounded-lg outline-none focus:border-primary-400">
+                <button onclick="addUrl()" class="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
+
+            <!-- File Drop Zone -->
+            <div class="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-primary-500 hover:bg-primary-50/30 transition-all group" onclick="document.getElementById('fileInput').click()">
+                <input type="file" id="fileInput" class="hidden" onchange="uploadFile(this)">
+                <div class="w-12 h-12 bg-white shadow-sm text-primary-500 rounded-xl flex items-center justify-center mx-auto mb-3 border border-gray-100 group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-upload text-xl"></i>
+                </div>
+                <p class="text-xs font-bold text-gray-700">Upload Documents</p>
+                <p class="text-[10px] text-gray-400 mt-1 uppercase">PDF, DOCX, TXT</p>
+            </div>
+
+            <!-- Active Files List -->
+            <div id="fileList" class="space-y-2"></div>
+        </div>
+    </div>
+
+    <div class="p-6 border-t border-gray-50">
+        <div class="bg-gray-900 rounded-xl p-4 text-white">
+            <h4 class="text-sm font-semibold mb-1">Status</h4>
+            <p id="statusInfo" class="text-[10px] text-gray-400 tracking-wide uppercase">Ready for Analysis</p>
+        </div>
+    </div>
+</aside>
+
+<!-- Main Content -->
+<main class="flex-1 flex flex-col relative bg-white">
+    <!-- Header -->
+    <header class="h-20 glass border-b border-gray-100 flex items-center justify-between px-6 z-20">
+        <div class="flex items-center gap-4">
+            <button class="lg:hidden text-gray-400 p-2" onclick="toggleSidebar()">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div>
+                <h1 class="font-bold text-gray-800">Chat Session</h1>
+                <p class="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">
+                    <span id="langLabel">English</span> Mode
+                </p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="clearChat()" class="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all" title="Clear Chat">
+                <i class="fa-regular fa-trash-can"></i>
+            </button>
+            <div class="h-10 w-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                U
+            </div>
+        </div>
+    </header>
+
+    <!-- Chat Area -->
+    <div id="chatArea" class="flex-1 overflow-y-auto p-6 space-y-6 lg:px-20">
+        <!-- Initial Bot Message -->
+        <div id="welcomeMessage" class="flex gap-4 message-anim">
+            <div class="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center text-white text-xs flex-shrink-0">
+                <i class="fa-solid fa-robot"></i>
+            </div>
+            <div id="botGreeting" class="bg-gray-100 p-4 rounded-2xl rounded-tl-none text-sm text-gray-700 max-w-[80%] leading-relaxed">
+                Namaste! I am your Multilingual Assistant. Please upload a document or paste a URL to start analyzing.
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="p-6 bg-gradient-to-t from-white via-white to-transparent">
+        <div class="max-w-4xl mx-auto">
+            <form onsubmit="sendMsg(event)" class="relative flex items-center gap-2 bg-white shadow-2xl rounded-full border border-gray-100 p-2 focus-within:ring-2 focus-within:ring-primary-100 transition-all">
+                <input type="text" id="userInput" placeholder="Ask anything about your documents..." class="flex-1 px-6 py-3 bg-transparent outline-none text-sm text-gray-700">
+                <button type="submit" id="sendBtn" class="w-12 h-12 bg-primary-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-primary-700 transition-colors flex-shrink-0">
+                    <i class="fa-solid fa-paper-plane text-sm"></i>
+                </button>
+            </form>
+            <p class="text-[10px] text-center text-gray-400 mt-3 font-medium">AI can make mistakes. Please verify important information.</p>
+        </div>
+    </div>
+</main>
+
+<script>
+    let lang = "English";
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('-translate-x-full');
+    }
+
+    const append = (text, sender) => {
+        const area = document.getElementById('chatArea');
+        const div = document.createElement('div');
+        div.className = `flex gap-4 message-anim ${sender === 'u' ? 'flex-row-reverse' : ''}`;
+        
+        const icon = sender === 'u' ? 
+            '<div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs font-bold flex-shrink-0">YOU</div>' : 
+            '<div class="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center text-white text-xs flex-shrink-0"><i class="fa-solid fa-robot"></i></div>';
+        
+        const bubbleClass = sender === 'u' ? 
+            'bg-primary-600 text-white rounded-tr-none' : 
+            'bg-gray-100 text-gray-700 rounded-tl-none';
+        
+        div.innerHTML = `
+            ${icon}
+            <div class="${bubbleClass} p-4 rounded-2xl shadow-sm text-sm max-w-[80%] leading-relaxed whitespace-pre-wrap">${text}</div>
+        `;
+        
+        area.appendChild(div);
+        area.scrollTop = area.scrollHeight;
+    };
+
+    const updateLang = async () => {
+        lang = document.getElementById('languageSelect').value;
+        document.getElementById('langLabel').innerText = lang;
+        
+        showSystemMsg(`Switched output to ${lang}`);
+        
+        // Objective: Initiation by chatbot question translated
+        try {
+            const res = await fetch('/get_greeting', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({language: lang})
+            });
+            const data = await res.json();
+            if(data.greeting) {
+                append(data.greeting, 'b');
+            }
+        } catch (e) {
+            console.error("Language greeting update failed");
+        }
+    };
+
+    function showSystemMsg(text) {
+        const area = document.getElementById('chatArea');
+        const div = document.createElement('div');
+        div.className = "flex justify-center my-4 message-anim";
+        div.innerHTML = `<span class="bg-gray-50 text-[10px] font-bold uppercase px-4 py-1.5 rounded-full text-gray-400 border border-gray-100 tracking-wider">${text}</span>`;
+        area.appendChild(div);
+        area.scrollTop = area.scrollHeight;
+    }
+
+    async function addUrl() {
+        const urlInput = document.getElementById('urlInput');
+        const url = urlInput.value.trim();
+        if(!url) return;
+        
+        showSystemMsg(`Scraping & Summarizing URL: ${url}...`);
+        urlInput.value = "";
+        
+        try {
+            const res = await fetch('/upload_url', {
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({url})
+            });
+            const data = await res.json();
+            if(data.error) throw new Error(data.error);
+            
+            showSystemMsg(data.message);
+            addToFileList(url, 'link');
+            document.getElementById('statusInfo').innerText = "URL Indexed";
+        } catch(e) {
+            showSystemMsg(`Error: ${e.message}`);
+        }
+    }
+
+    async function uploadFile(input) {
+        const file = input.files[0];
+        if(!file) return;
+        
+        const fd = new FormData(); 
+        fd.append('file', file);
+        
+        showSystemMsg(`Processing ${file.name}...`);
+        
+        try {
+            const res = await fetch('/upload_file', {method: 'POST', body: fd});
+            const data = await res.json();
+            if(data.error) throw new Error(data.error);
+            
+            showSystemMsg(data.message);
+            addToFileList(file.name, 'file');
+            document.getElementById('statusInfo').innerText = "File Indexed";
+        } catch(e) {
+            showSystemMsg(`Upload failed: ${e.message}`);
+        }
+    }
+
+    async function sendMsg(e) {
+        e.preventDefault();
+        const input = document.getElementById('userInput');
+        const btn = document.getElementById('sendBtn');
+        const m = input.value.trim();
+        if(!m) return;
+        
+        input.value = "";
+        append(m, 'u');
+        
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sm"></i>';
+
+        try {
+            const res = await fetch('/chat', {
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({message: m, language: lang})
+            });
+            const data = await res.json();
+            append(data.answer, 'b');
+        } catch(e) {
+            append("Sorry, I encountered an error processing your query.", 'b');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane text-sm"></i>';
+        }
+    }
+
+    function addToFileList(name, type) {
+        const list = document.getElementById('fileList');
+        const div = document.createElement('div');
+        div.className = "flex items-center gap-2 p-2.5 bg-gray-50 rounded-lg border border-gray-100 text-[10px] font-bold text-gray-600 overflow-hidden";
+        div.innerHTML = `<i class="fa-solid ${type === 'link' ? 'fa-link' : 'fa-file-pdf'} text-primary-500 flex-shrink-0"></i> <span class="truncate flex-1">${name}</span>`;
+        list.appendChild(div);
+    }
+
+    async function clearChat() {
+        document.getElementById('chatArea').innerHTML = "";
+        document.getElementById('fileList').innerHTML = "";
+        document.getElementById('statusInfo').innerText = "Ready for Analysis";
+        await fetch('/clear', {method: 'POST'});
+        showSystemMsg("Session cleared.");
+    }
+</script>
+
+
+</body>
+</html>
