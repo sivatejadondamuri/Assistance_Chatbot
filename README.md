@@ -114,7 +114,7 @@ Google Gemini API Key
 
 ## 📥 Installation
 ### 1️⃣ Clone the Repository
-- git clone https://github.com/your-username/multilingual-docchat.git
+- git clone https://github.com/sivatejadondamuri/Assistance_Chatbot.git
 - cd multilingual-docchat
 
 ### 2️⃣ Install Dependencies
